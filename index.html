@@ -304,6 +304,7 @@ const TPL=[
   {id:'full',nm:'Full body',lieu:'salle',sub:'Tout le corps · efficace',ex:['squat','dc','rowbarre','dm','gainage']},
   {id:'fullm',nm:'Full body maison',lieu:'maison',sub:'Sans matériel · 30 min',ex:['pompes','squatpdc','fentes','gainage','burpees']},
   {id:'hautm',nm:'Haut du corps maison',lieu:'maison',sub:'Pompes · épaules · triceps',ex:['pompes','pike','dipchaise','gainage']},
+  {id:'basm',nm:'Bas du corps maison',lieu:'maison',sub:'Jambes et fessiers · sans matériel',ex:['squatpdc','fentes','mountain','gainage']},
   {id:'abdos',nm:'Abdos express',lieu:'maison',sub:'15 min · avant la douche',ex:['crunch','releve','mountain','gainage']}
 ];
 
@@ -527,10 +528,10 @@ function sportGuess(name){
   const n=norm(name);if(!SPORT_WORDS.test(n))return null;
   const maison=/maison|home|sans materiel|poids du corps/.test(n);
   if(/\bupper\b|haut du corps/.test(n))return maison?'hautm':'upper';
-  if(/\blower\b|bas du corps/.test(n))return maison?'fullm':'lower';
-  if(/\bpush\b|pecs?|pectoraux|epaules?|triceps/.test(n))return maison?'hautm':'push';
-  if(/\bpull\b|\bdos\b|biceps|tractions/.test(n))return 'pull';
-  if(/\blegs?\b|jambes?|squat/.test(n))return 'legs';
+  if(/\blower\b|bas du corps/.test(n))return maison?'basm':'lower';
+  if(/\bpush\b|pecs?|pectoraux|epaules?|triceps|pompes/.test(n))return maison?'hautm':'push';
+  if(/\bpull\b|\bdos\b|biceps|tractions/.test(n))return maison?'hautm':'pull';
+  if(/\blegs?\b|jambes?|squat/.test(n))return maison?'basm':'legs';
   if(/abdos?|gainage/.test(n))return 'abdos';
   if(/full ?body/.test(n))return maison?'fullm':'full';
   if(/course|courir|running|\brun\b|footing|jogging|velo|natation|boxe|cardio|hiit/.test(n))return 'none';
@@ -563,12 +564,20 @@ function editSheet(id){
   h+='<div class="two"><div class="f"><label class="lbl" for="eT">Heure</label><input class="in" id="eT" type="time" value="'+e.t+'"></div><div class="f"><label class="lbl" for="eD">Durée</label><select class="in" id="eD">'+[0,5,10,15,20,30,45,60,75,90,120,180].map(v=>'<option value="'+v+'"'+(v===e.dur?' selected':'')+'>'+(v?fmtDur(v):'Repère (pas de durée)')+'</option>').join('')+'</select></div></div>';
   h+='<div class="f"><span class="lbl">Quels jours</span><div class="days" id="eDays">'+D1.map((d,i)=>'<button data-act="eday" data-i="'+i+'" aria-pressed="'+e.days.includes(i)+'" aria-label="'+DAYS[i]+'">'+d+'</button>').join('')+'</div></div>';
   const showS=!!e.sport||!!sportGuess(e.n);
-  h+='<div class="f" id="eSW"'+(showS?'':' hidden')+'><label class="lbl" for="eS">Séance de sport liée</label><select class="in" id="eS"><option value="">Aucune séance</option>'+allTpl().map(t=>'<option value="'+t.id+'"'+(e.sport===t.id?' selected':'')+'>'+esc(t.nm)+' · '+(t.lieu==='maison'?'maison':'salle')+'</option>').join('')+'</select></div>';
+  U.sLieu=(tplById(e.sport)||{}).lieu||'salle';
+  h+='<div class="f" id="eSW"'+(showS?'':' hidden')+'><span class="lbl">Séance de sport</span><input type="hidden" id="eS" value="'+esc(e.sport||'')+'"><div id="eSP"></div></div>';
   h+='<button class="link" id="eSL" data-act="showsport" style="margin-top:6px;padding:0"'+(showS?' hidden':'')+'>+ Lier une séance de sport</button>';
   if(S.goals.length)h+='<div class="f"><label class="lbl" for="eG">Ça me rapproche de</label><select class="in" id="eG"><option value="">Aucun objectif en particulier</option>'+S.goals.map(g=>'<option value="'+g.id+'"'+(e.goal===g.id?' selected':'')+'>'+esc(g.n)+'</option>').join('')+'</select></div>';
   h+='<button class="btn full" data-act="esave" style="margin-top:22px">'+(b?'Enregistrer':'Ajouter à ma semaine')+'</button>';
   if(b)h+='<button class="btn ghost full danger" data-act="edel" data-id="'+b.id+'" style="margin-top:8px">'+(U.confirmDel?'Confirmer la suppression':'Supprimer ce bloc')+'</button>';
-  openSheet(h);
+  openSheet(h,renderSportPick);
+}
+function renderSportPick(){
+  const box=$('eSP'),inp=$('eS');if(!box||!inp)return;
+  const v=inp.value;
+  let h='<div class="chips">'+['salle','maison'].map(l=>'<button class="chip" data-act="slieu" data-v="'+l+'" aria-pressed="'+(U.sLieu===l)+'">'+(l==='salle'?'À la salle':'À la maison')+'</button>').join('')+'</div>';
+  h+='<div class="chips" style="margin-top:10px">'+allTpl().filter(t=>t.lieu===U.sLieu).map(t=>'<button class="chip" data-act="spick" data-v="'+t.id+'" aria-pressed="'+(v===t.id)+'">'+esc(t.nm.replace(/ maison$/,''))+'</button>').join('')+'<button class="chip" data-act="spick" data-v="" aria-pressed="'+(!v)+'">Aucune</button></div>';
+  box.innerHTML=h;
 }
 function saveEdit(){
   const e=U.editing,n=$('eN').value.trim();
@@ -959,7 +968,9 @@ document.addEventListener('click',ev=>{
     case 'newblock':U.confirmDel=false;U.wasNew=true;editSheet(null);break;
     case 'edit':U.confirmDel=false;U.wasNew=false;editSheet(id);break;
     case 'idea':{$('eN').value=el.dataset.v;onNameInput();if(el.dataset.v==='Sport')$('eD').value='60';break;}
-    case 'showsport':U.sportOpened=true;$('eSW').hidden=false;el.hidden=true;$('eS').focus();break;
+    case 'showsport':U.sportOpened=true;$('eSW').hidden=false;el.hidden=true;renderSportPick();break;
+    case 'slieu':U.sportTouched=true;U.sLieu=el.dataset.v;{const t=tplById($('eS').value);if(t&&t.lieu!==U.sLieu)$('eS').value='';}renderSportPick();break;
+    case 'spick':U.sportTouched=true;$('eS').value=el.dataset.v;renderSportPick();break;
     case 'eday':{const i=+el.dataset.i,d=U.editing.days;d.includes(i)?d.splice(d.indexOf(i),1):d.push(i);el.setAttribute('aria-pressed',d.includes(i));break;}
     case 'esave':saveEdit();break;
     case 'edel':if(!U.confirmDel){U.confirmDel=true;el.textContent='Confirmer la suppression';break;}S.blocks=S.blocks.filter(b=>b.id!==id);save();closeSheet();render();toast('Bloc supprimé');break;
@@ -1016,8 +1027,8 @@ document.addEventListener('click',ev=>{
 function onNameInput(){
   const w=$('eSW'),sel=$('eS');if(!w||!sel)return;
   const g=sportGuess($('eN').value);
-  if(g){w.hidden=false;$('eSL').hidden=true;if(!U.sportTouched&&g!=='none')sel.value=g;}
-  else if(!U.sportTouched&&!U.sportOpened){sel.value='';w.hidden=true;$('eSL').hidden=false;}
+  if(g){w.hidden=false;$('eSL').hidden=true;if(!U.sportTouched){sel.value=g==='none'?'':g;if(g!=='none')U.sLieu=tplById(g).lieu;}renderSportPick();}
+  else if(!U.sportTouched&&!U.sportOpened){sel.value='';w.hidden=true;$('eSL').hidden=false;renderSportPick();}
 }
 document.addEventListener('input',ev=>{if(ev.target&&ev.target.id==='eN')onNameInput();});
 document.addEventListener('change',ev=>{const el=ev.target;if(el&&el.id==='eS')U.sportTouched=true;if(el.dataset&&el.dataset.act==='setin'){syncInputs();}});
