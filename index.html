@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Elyos</title>
 <meta name="description" content="Elyos — ta semaine idéale, une journée qui s'adapte, et la preuve que tu changes.">
 <meta name="theme-color" content="#08090A">
@@ -32,7 +32,12 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{touch-action:manipulation}
+body{overscroll-behavior-y:none}
+button,a,input,select,textarea{touch-action:manipulation}
+body{-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;-webkit-font-smoothing:antialiased;min-height:100dvh}
 button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
 input,select,textarea{font-family:inherit}
@@ -71,10 +76,14 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:-.01
 /* Champs */
 .f{margin-top:16px}
 .f>label,.f>.lbl{display:block;margin-bottom:8px}
-.in{width:100%;min-height:50px;background:var(--s1);border:1px solid var(--line2);border-radius:12px;color:var(--ink);font-size:16px;font-weight:500;padding:0 14px}
+.in{display:block;width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;min-height:50px;line-height:50px;background:var(--s1);border:1px solid var(--line2);border-radius:12px;color:var(--ink);font-size:16px;font-weight:500;padding:0 14px}
 .in:focus{border-color:var(--warm);outline:none}
 textarea.in{padding:12px 14px;min-height:80px;resize:none;line-height:1.4}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type="time"].in{text-align:left}
+input[type="time"].in::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+select.in{padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238B9097' stroke-width='1.8'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.two>*{min-width:0}
 
 /* ---------- AUJOURD'HUI ---------- */
 .prog{display:flex;align-items:center;gap:12px;margin-top:16px}
@@ -145,7 +154,8 @@ textarea.in{padding:12px 14px;min-height:80px;resize:none;line-height:1.4}
 .exhd h2{font-size:21px;line-height:1.15;margin-top:6px}
 .tip{font-size:13.5px;color:var(--mute);line-height:1.5;margin-top:14px}
 .goal{margin-top:14px;padding:11px 14px;border-radius:12px;background:var(--warmDim);color:var(--warm);font-size:13.5px;font-weight:600}
-.sethd,.setrow{display:grid;grid-template-columns:28px 1fr 74px 64px 44px;gap:8px;align-items:center}
+.sethd,.setrow{display:grid;grid-template-columns:24px minmax(0,1fr) 72px 62px 44px;gap:8px;align-items:center}
+.setrow input{min-width:0;-webkit-appearance:none;appearance:none}
 .sethd{margin-top:18px;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
 .sethd span:nth-child(n+3){text-align:center}
 .setrow{min-height:56px;border-top:1px solid var(--line)}
