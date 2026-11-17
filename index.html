@@ -299,6 +299,8 @@ const TPL=[
   {id:'push',nm:'Push',lieu:'salle',sub:'Pectoraux · Épaules · Triceps',ex:['dc','dih','dm','latrel','tripoulie','dip']},
   {id:'pull',nm:'Pull',lieu:'salle',sub:'Dos · Biceps',ex:['tractions','rowbarre','tirage','curlbarre','curlinc']},
   {id:'legs',nm:'Legs',lieu:'salle',sub:'Jambes · Ischios · Mollets',ex:['squat','presse','sdtr','mollets','gainage']},
+  {id:'upper',nm:'Upper',lieu:'salle',sub:'Haut du corps · pecs, dos, épaules, bras',ex:['dc','rowbarre','dm','tirage','curlbarre','tripoulie']},
+  {id:'lower',nm:'Lower',lieu:'salle',sub:'Bas du corps · jambes, ischios, mollets',ex:['squat','sdtr','presse','mollets','gainage']},
   {id:'full',nm:'Full body',lieu:'salle',sub:'Tout le corps · efficace',ex:['squat','dc','rowbarre','dm','gainage']},
   {id:'fullm',nm:'Full body maison',lieu:'maison',sub:'Sans matériel · 30 min',ex:['pompes','squatpdc','fentes','gainage','burpees']},
   {id:'hautm',nm:'Haut du corps maison',lieu:'maison',sub:'Pompes · épaules · triceps',ex:['pompes','pike','dipchaise','gainage']},
@@ -356,7 +358,7 @@ let seq=Date.now()%100000;
 const uid=p=>(p||'x')+(++seq).toString(36);
 
 /* UI */
-const U={tab:'jour',ob:{step:0,name:'',identity:'',hasWork:true,ws:'08:30',we:'16:30',wd:WK.slice(),sportN:3,lieu:'salle',model:'taf'},exI:0,sheet:null,editing:null,confirmDel:false};
+const U={tab:'jour',ob:{step:0,name:'',identity:'',hasWork:true,ws:'08:30',we:'16:30',wd:WK.slice(),sportN:4,lieu:'salle',split:'ppul',model:'taf'},exI:0,sheet:null,editing:null,confirmDel:false};
 
 /* ============================================================
    OUTILS
@@ -520,10 +522,12 @@ function blockSheet(id){
   openSheet(h);
 }
 const norm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-const SPORT_WORDS=/\b(sport|muscu|musculation|salle|gym|seance|entrainement|training|workout|push|pull|legs?|jambes?|pecs?|pectoraux|dos|bras|epaules?|biceps|triceps|abdos?|gainage|cardio|course|courir|running|run|footing|jogging|crossfit|fitness|hiit|full ?body|halteres?|squat|pompes|tractions|velo|natation|boxe|street ?workout)\b/;
+const SPORT_WORDS=/\b(sport|muscu|musculation|salle|gym|seance|entrainement|training|workout|push|pull|legs?|jambes?|pecs?|pectoraux|dos|bras|epaules?|biceps|triceps|abdos?|gainage|cardio|course|courir|running|run|footing|jogging|crossfit|fitness|hiit|full ?body|halteres?|squat|pompes|tractions|velo|natation|boxe|street ?workout|upper|lower|haut du corps|bas du corps)\b/;
 function sportGuess(name){
   const n=norm(name);if(!SPORT_WORDS.test(n))return null;
   const maison=/maison|home|sans materiel|poids du corps/.test(n);
+  if(/\bupper\b|haut du corps/.test(n))return maison?'hautm':'upper';
+  if(/\blower\b|bas du corps/.test(n))return maison?'fullm':'lower';
   if(/\bpush\b|pecs?|pectoraux|epaules?|triceps/.test(n))return maison?'hautm':'push';
   if(/\bpull\b|\bdos\b|biceps|tractions/.test(n))return 'pull';
   if(/\blegs?\b|jambes?|squat/.test(n))return 'legs';
@@ -860,7 +864,8 @@ function renderOnboarding(){
     h+='<h1>Et le sport ?</h1><div class="sub">Elyos te prépare les séances et suit tes charges comme un vrai carnet.</div>';
     h+='<div class="f" style="margin-top:26px"><span class="lbl">Séances par semaine</span><div class="days">'+[0,2,3,4,5].map(n=>'<button data-act="ob-sn" data-v="'+n+'" aria-pressed="'+(o.sportN===n)+'">'+(n||'0')+'</button>').join('')+'</div></div>';
     if(o.sportN)h+='<div class="f"><span class="lbl">Où</span><div class="chips"><button class="chip" data-act="ob-lieu" data-v="salle" aria-pressed="'+(o.lieu==='salle')+'">À la salle</button><button class="chip" data-act="ob-lieu" data-v="maison" aria-pressed="'+(o.lieu==='maison')+'">À la maison</button></div></div>'
-      +'<div class="sub" style="margin-top:14px;font-size:13px">'+(o.lieu==='salle'?sportPlan(o.sportN,'salle').map(id=>tplName(id)).join(' · '):sportPlan(o.sportN,'maison').map(id=>tplName(id)).join(' · '))+', placées '+(o.hasWork?'après le taf':'en fin de journée')+'.</div>';
+      +(o.lieu==='salle'?'<div class="f"><span class="lbl">Ton programme</span><div class="chips">'+SPLITS.map(x=>'<button class="chip" data-act="ob-split" data-v="'+x.id+'" aria-pressed="'+(o.split===x.id)+'">'+esc(x.nm)+'</button>').join('')+'</div></div>':'')
+      +'<div class="sub" style="margin-top:14px;font-size:13px">Ta semaine : '+sportPlan(o.sportN,o.lieu,o.split).map(id=>tplName(id)).join(' · ')+', placées '+(o.hasWork?'après le taf':'en fin de journée')+'. Tu pourras tout changer.</div>';
   }
   if(st===4){
     h+='<h1>Pars d’un modèle.</h1><div class="sub">Une semaine toute faite que tu ajustes ensuite. Tu pourras en ajouter d’autres.</div>';
@@ -870,10 +875,16 @@ function renderOnboarding(){
   h+='<div class="grow"></div><div class="foot"><div class="btns" style="margin:0">'+(st>1?'<button class="btn ghost" data-act="ob-back" style="flex:0 0 auto">Retour</button>':'')+'<button class="btn" data-act="ob-next">'+(st===4?'Générer ma semaine':'Continuer')+'</button></div></div></div>';
   $('app').innerHTML=h;
 }
-function sportPlan(n,lieu){
+const SPLITS=[
+  {id:'ppul',nm:'Push / Pull / Upper / Lower',seq:['push','pull','upper','lower','push']},
+  {id:'ul',nm:'Upper / Lower',seq:['upper','lower','upper','lower','upper']},
+  {id:'ppl',nm:'Push / Pull / Legs',seq:['push','pull','legs','push','pull']},
+  {id:'full',nm:'Full body',seq:['full','full','full','full','full']}
+];
+function sportPlan(n,lieu,split){
   if(lieu==='maison')return ['fullm','hautm','abdos','fullm','hautm'].slice(0,n);
-  if(n<=2)return ['full','full'].slice(0,n);
-  return ['push','pull','legs','full','push'].slice(0,n);
+  const sp=SPLITS.find(x=>x.id===split)||SPLITS[0];
+  return sp.seq.slice(0,n);
 }
 function sportDays(n){return {0:[],2:[1,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,3,4]}[n]||[];}
 function obCollect(){
@@ -889,7 +900,7 @@ function obFinish(){
   if(o.hasWork&&o.wd.length)S.work={s:o.ws,e:o.we,days:o.wd.slice()};
   const endW=S.work?tmin(S.work.e):17*60;
   // sport
-  const plan=sportPlan(o.sportN,o.lieu),sd=sportDays(o.sportN);
+  const plan=sportPlan(o.sportN,o.lieu,o.split),sd=sportDays(o.sportN);
   plan.forEach((tid,i)=>{const day=sd[i];const t=S.work&&S.work.days.includes(day)?mtime(Math.ceil((endW+30)/15)*15):'10:30';
     const ex=S.blocks.find(b=>b.sport===tid&&b.t===t);if(ex){ex.days.push(day);return;}
     S.blocks.push({id:uid('b'),n:'Sport · '+tplName(tid),t,dur:60,days:[day],sport:tid,goal:''});});
@@ -930,6 +941,7 @@ document.addEventListener('click',ev=>{
     case 'ob-work':obCollect();U.ob.hasWork=el.dataset.v==='1';render();break;
     case 'ob-wd':{obCollect();const i=+el.dataset.i,w=U.ob.wd;w.includes(i)?w.splice(w.indexOf(i),1):w.push(i);render();break;}
     case 'ob-sn':U.ob.sportN=+el.dataset.v;render();break;
+    case 'ob-split':U.ob.split=el.dataset.v;render();break;
     case 'ob-lieu':U.ob.lieu=el.dataset.v;render();break;
     case 'ob-model':U.ob.model=el.dataset.v;render();break;
     /* Journée */

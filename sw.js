@@ -2,7 +2,7 @@
    Stratégie : network-first sur le HTML (pour recevoir les mises à jour),
    cache-first sur les assets statiques. Les données utilisateur vivent
    dans localStorage, pas ici : vider le cache ne perd jamais tes cycles. */
-const CACHE = 'elyos-v2.2';
+const CACHE = 'elyos-v2.3';
 const ASSETS = [
   './',
   './index.html',
